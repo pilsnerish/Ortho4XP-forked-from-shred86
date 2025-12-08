@@ -1417,6 +1417,7 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
         for item in self.list_del_ckbtn + self.list_do_ckbtn:
             self.v_[item] = tk.IntVar()
         self.latlon = tk.StringVar()
+        self.fmsplan = []
 
         # Frames
         self.frame_left = tk.Frame(
@@ -1500,8 +1501,40 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
             self.frame_left, text="  Batch Build   ", command=self.batch_build
         ).grid(row=row, column=0, padx=5, pady=5, sticky=N + S + E + W)
         row += 1
+        tk.Label(
+            self.frame_left,
+            anchor=W,
+            text="Preview flight plan",
+            fg="light green",
+            bg="dark green",
+            font="Helvetica 16 bold italic",
+        ).grid(row=row, column=0, sticky=E + W)
+        row += 1
+        self.fmsplan_path = tk.StringVar()
+        tk.Entry(
+            self.frame_left,
+            bg="white",
+            fg="blue",
+            textvariable=self.fmsplan_path,
+        ).grid(row=row, column=0, padx=5, pady=5, sticky=W)
+        ttk.Button(
+            self.frame_left,
+            takefocus=False,
+            image=self.parent.folder_icon,
+            command=self.choose_fmsplan_path,
+            style="Flat.TButton",
+        ).grid(row=row, column=0, padx=5, pady=5, sticky=E)
+        row += 1
+        ttk.Button(
+            self.frame_left, text="Refresh Flight Plan", command=self.refresh_fmsplan
+        ).grid(row=row, column=0, padx=5, pady=5, sticky=N + S + E + W)
+        row += 1
+        ttk.Button(
+            self.frame_left, text="Clear Flight Plan", command=self.clear_fmsplan
+        ).grid(row=row, column=0, padx=5, pady=5, sticky=N + S + E + W)
+        row += 1
         ttk.Separator(self.frame_left, orient=HORIZONTAL).grid(row=row, column=0, padx=5, pady=5, sticky=N + S + E + W)
-        row +=1
+        row += 1
         tk.Label(
             self.frame_left,
             text="B2-click+hold: Move map\n" + \
@@ -1567,6 +1600,70 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
             x0, y0, x1, y1, fill="", outline="yellow", width=3
         )
         self.threaded_preview()
+        return
+
+    def choose_fmsplan_path(self) -> None:
+        """Choose flight plan file from open file dialog."""
+        tmpf = filedialog.askopenfilename(
+            parent=self, filetypes=[("X-Plane flight plan file", "*.fms")]
+        )
+        if tmpf:
+            self.fmsplan_path.set(tmpf)
+            self.refresh_fmsplan()
+        return
+
+    def clear_fmsplan(self) -> None:
+        """Clear flight plan from preview."""
+        self.fmsplan.clear()
+        self.fmsplan_path.set("")
+        self.canvas.delete("fmsplan")
+        return
+
+    def refresh_fmsplan(self) -> None:
+        """Clear flight plan from preview, and redraw."""
+        self.fmsplan.clear()
+        self.canvas.delete("fmsplan")
+        path = self.fmsplan_path.get()
+        if os.path.exists(path):
+            f = open(path, "r")
+            for line in f.readlines():
+                parts = line.strip().split()
+                if not parts or parts[0] not in ["1", "2", "3", "11", "28"]:
+                    continue
+                try:
+                    lat = float(parts[4])
+                    lon = float(parts[5])
+                    self.fmsplan.append((lat, lon))
+                except:
+                    continue
+            f.close()
+            if len(self.fmsplan) > 0:
+                for idx, (lat, lon) in enumerate(self.fmsplan):
+                    (x0, y0) = GEO.wgs84_to_pix(lat, lon, self.earthzl)
+                    self.canvas.create_rectangle(
+                        x0 - 3, y0 - 3, x0 + 3, y0 + 3,
+                        fill="magenta", width=0, tags="fmsplan"
+                    )
+                    try:
+                        (x1, y1) = GEO.wgs84_to_pix(
+                            self.fmsplan[idx+1][0], self.fmsplan[idx+1][1],
+                            self.earthzl
+                        )
+                        self.canvas.create_line(
+                            x0, y0, x1, y1,
+                            fill="magenta", width=2, tags="fmsplan"
+                        )
+                    except:
+                        break
+                (x0, y0) = GEO.wgs84_to_pix(
+                    self.fmsplan[0][0], self.fmsplan[0][1],
+                    self.earthzl
+                )
+                x0 = max(1, x0 - self.canvas_min_x / 2)
+                y0 = max(1, y0 - self.canvas_min_y / 2)
+                self.canvas.xview_moveto(x0 / self.resolution)
+                self.canvas.yview_moveto(y0 / self.resolution)
+                self.redraw_canvas()
         return
 
     def add_symlink(self, lat: int, lon: int) -> None:
