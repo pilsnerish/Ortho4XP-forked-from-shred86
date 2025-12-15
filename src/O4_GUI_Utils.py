@@ -2224,24 +2224,30 @@ class Ortho4XP_Earth_Preview(tk.Toplevel):
         self.add_symlink(lat, lon)
         return
 
-    def add_tile(self, event):
+    def add_tile(self, event: tk.Event) -> None:
+        """Add/remove tile at mouse x/y to/from batch."""
         x = self.canvas.canvasx(event.x)
         y = self.canvas.canvasy(event.y)
         (lat, lon) = [floor(t) for t in GEO.pix_to_wgs84(x, y, self.earthzl)]
         if (lat, lon) not in self.dico_tiles_todo:
-            [x0, y0] = GEO.wgs84_to_pix(lat + 1, lon, self.earthzl)
-            [x1, y1] = GEO.wgs84_to_pix(lat, lon + 1, self.earthzl)
-            if not OsX:
-                self.dico_tiles_todo[(lat, lon)] = self.canvas.create_rectangle(
-                    x0, y0, x1, y1, fill="red", stipple="gray12"
-                )
-            else:
-                self.dico_tiles_todo[(lat, lon)] = self.canvas.create_rectangle(
-                    x0 + 2, y0 + 2, x1 - 2, y1 - 2, outline="red", width=1
-                )
+            self.add_tile_to_batch(lat, lon)
         else:
             self.canvas.delete(self.dico_tiles_todo[(lat, lon)])
             self.dico_tiles_todo.pop((lat, lon), None)
+        return
+
+    def add_tile_to_batch(self, lat: int, lon: int) -> None:
+        """Add tile at lat/lon to batch."""
+        [x0, y0] = GEO.wgs84_to_pix(lat + 1, lon, self.earthzl)
+        [x1, y1] = GEO.wgs84_to_pix(lat, lon + 1, self.earthzl)
+        if not OsX:
+            self.dico_tiles_todo[(lat, lon)] = self.canvas.create_rectangle(
+                x0, y0, x1, y1, fill="red", stipple="gray12"
+            )
+        else:
+            self.dico_tiles_todo[(lat, lon)] = self.canvas.create_rectangle(
+                x0 + 2, y0 + 2, x1 - 2, y1 - 2, outline="red", width=1
+            )
         return
 
     def batch_build(self):
