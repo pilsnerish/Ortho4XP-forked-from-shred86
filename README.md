@@ -46,13 +46,14 @@ The specific changes in this forked version:
 * Updated Python and pin requirements to latest working versions.
 * Adds a bash script to automate the setup process for those that prefer not to use the packaged version.
 * Removed Maxar and Mapbox image providers which are no longer publically available.
-* Removed unavailable OSM FR, updated/added RU and JP overpass servers.
+* Update overpass servers.
 * Include 7-zip executable for Mac.
 * Update EOX url template and deleted the broken EOX2.lay file. @A346fan
 * Updated Windows & Linux nvcompress to latest version. @tlinkin
 * Use DDSTool instead of nvcompress for Mac.
 * Update DFSTool to latest version 24-5.
 * Removed unused tools.
+* Update numpy to 2.3.4 and included specific .whl file for Python 3.13 to avoid an issue on Mac.
 
 #### Bug Fixes
 * If one-click symlink feature is used, added removal of symlink when "Erase cached data" "Tile (whole)" option is used.
@@ -70,6 +71,12 @@ The specific changes in this forked version:
 * Fixed a bug and improved handling of complex meshes (e.g., +30-085) that would cause the build process to get stuck.
 * Fixed and improved automatically trying a lower `min_angle` value when the current value fails.
 * Reverted to previous triangle.exe to fix issues with creation of extent masks and certain providers.
+* Fixed issue with latest version of shapely.
+* Fixed OSM.lay provider to resolve 403 error with "Preview / Custom Zoom levels" window. @d41k4n
+* Fixed issue in Triangle4XP.c with `scaly2` and rebuilt Triangle4XP executables for Windows, Mac (Universal) and Linux.
+* Fixed redundant output supression with `subprocess.call`.
+* Fixed temporary tif not being removed in `convert_texture` function.
+* Update deprecated pillow method `BICUBIC` with `Resampling.BICUBIC`.
 
 ## Installation
 
