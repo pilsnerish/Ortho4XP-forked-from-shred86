@@ -514,17 +514,14 @@ def OSM_query_to_OSM_layer(
 
 ################################################################################
 def get_overpass_data(query, bbox, server_code=None):
-    tentative = 1
     s = requests.Session()
     s.headers.update({"User-Agent": f"Ortho4XP-{O4XP_VERSION} (https://github.com/shred86/Ortho4XP)"})
-    while True:
-        true_server_code = server_code
-        if not server_code:
-            true_server_code = (
-                random.choice(list(overpass_servers.keys()))
-                if overpass_server_choice == "random"
-                else overpass_server_choice
-            )
+    for tentative in range(1, max_osm_tentatives + 1):
+        true_server_code = server_code or (
+            random.choice(list(overpass_servers.keys()))
+            if overpass_server_choice == "random"
+            else overpass_server_choice
+        )
         base_url = overpass_servers[true_server_code]
         if isinstance(query, str):
             overpass_query = query + str(bbox) + ";"
@@ -532,31 +529,22 @@ def get_overpass_data(query, bbox, server_code=None):
             overpass_query = "".join([x + str(bbox) + ";" for x in query])
         url = base_url + "?data=(" + overpass_query + ");(._;>>;);out meta;"
         UI.vprint(3, url)
+        wait = 2 ** tentative
         try:
             r = s.get(url, timeout=60)
             UI.vprint(3, "OSM response status :", r)
             # 429 response is Overpass server rate limiting users IP so we use provided
-            # retry-after or more aggressive back off, whichever is greater
+            # retry-after value or a more aggressive back off, whichever is greater
             if r.status_code == 429:
-                retry_after = max(
-                    int(r.headers.get("Retry-After", 0)),
-                    60 * tentative,
-                )
+                wait = max(int(r.headers.get("Retry-After", 0)), 60 * tentative)
                 UI.vprint(
                     1,
                     "        OSM server",
                     true_server_code,
                     "rate limited us (429), backing off for",
-                    retry_after,
+                    wait,
                     "sec...",
                 )
-                if tentative >= max_osm_tentatives:
-                    return 0
-                if UI.red_flag:
-                    return 0
-                time.sleep(retry_after)
-                tentative += 1
-                continue
             elif r.status_code == 200:
                 if (
                     b"</osm>" not in r.content[-10:]
@@ -568,7 +556,7 @@ def get_overpass_data(query, bbox, server_code=None):
                         true_server_code,
                         "sent a corrupted answer (no closing </osm> tag in ",
                         "answer), new tentative in",
-                        2 ** tentative,
+                        wait,
                         "sec...",
                     )
                 elif len(r.content) <= 1000 and b"error" in r.content:
@@ -578,27 +566,29 @@ def get_overpass_data(query, bbox, server_code=None):
                         true_server_code,
                         "sent us an error code for the data (data too big ?), ",
                         "new tentative in",
-                        2 ** tentative,
+                        wait,
                         "sec...",
                     )
                 else:
-                    break
+                    return r.content
             else:
                 UI.vprint(
                     1,
                     "        OSM server",
                     true_server_code,
-                    "rejected our query, new tentative in",
-                    2 ** tentative,
+                    "rejected our query (HTTP",
+                    r.status_code,
+                    "), new tentative in",
+                    wait,
                     "sec...",
                 )
-        except:
+        except Exception:
             UI.vprint(
                 1,
                 "        OSM server",
                 true_server_code,
                 "was too busy, new tentative in",
-                2 ** tentative,
+                wait,
                 "sec...",
             )
             true_server_code = (
@@ -607,13 +597,10 @@ def get_overpass_data(query, bbox, server_code=None):
                 else overpass_server_choice
             )
             UI.vprint(1, "        Trying different OSM server", true_server_code)
-        if tentative >= max_osm_tentatives:
-            return 0
         if UI.red_flag:
             return 0
-        time.sleep(2 ** tentative)
-        tentative += 1
-    return r.content
+        time.sleep(wait)
+    return 0
 
 ################################################################################
 def OSM_to_MultiLineString(
