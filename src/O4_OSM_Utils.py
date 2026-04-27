@@ -535,7 +535,29 @@ def get_overpass_data(query, bbox, server_code=None):
         try:
             r = s.get(url, timeout=60)
             UI.vprint(3, "OSM response status :", r)
-            if "200" in str(r):
+            # 429 response is Overpass server rate limiting users IP so we use provided
+            # retry-after or more aggressive back off, whichever is greater
+            if r.status_code == 429:
+                retry_after = max(
+                    int(r.headers.get("Retry-After", 0)),
+                    60 * tentative,
+                )
+                UI.vprint(
+                    1,
+                    "        OSM server",
+                    true_server_code,
+                    "rate limited us (429), backing off for",
+                    retry_after,
+                    "sec...",
+                )
+                if tentative >= max_osm_tentatives:
+                    return 0
+                if UI.red_flag:
+                    return 0
+                time.sleep(retry_after)
+                tentative += 1
+                continue
+            elif r.status_code == 200:
                 if (
                     b"</osm>" not in r.content[-10:]
                     and b"</OSM>" not in r.content[-10:]
