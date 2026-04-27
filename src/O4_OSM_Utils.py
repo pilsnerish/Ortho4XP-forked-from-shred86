@@ -8,6 +8,7 @@ import numpy
 from shapely import geometry, ops
 import O4_UI_Utils as UI
 import O4_File_Names as FNAMES
+from O4_Version import version as O4XP_VERSION
 
 overpass_servers = {
     "DE": "https://overpass-api.de/api/interpreter",
@@ -514,8 +515,9 @@ def OSM_query_to_OSM_layer(
 ################################################################################
 def get_overpass_data(query, bbox, server_code=None):
     tentative = 1
+    s = requests.Session()
+    s.headers.update({"User-Agent": f"Ortho4XP-{O4XP_VERSION} (https://github.com/shred86/Ortho4XP)"})
     while True:
-        s = requests.Session()
         true_server_code = server_code
         if not server_code:
             true_server_code = (
