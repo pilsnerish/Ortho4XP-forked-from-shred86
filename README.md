@@ -35,6 +35,7 @@ The specific changes in this forked version:
 * Default `imprint_mask_to_dds` to `False` to prevent issues with `water_tech=XP12`.
 * Added a new setting `max_download_slots` to support a new feature allowing users to specify number of parallel threads for imagery download. @tlinkin
 * Setting `max_convert_slots` can now be manually specified by the user.
+* Refactored `get_overpass_data` function: moved overpass servers to external overpass_servers.txt file, specified a user-agent, and using different OSM server on each request.
 
 #### Miscellaneous
 * Automatically saves the same data (active tile, default provider, default zoom level and base folder) that the power button icon does when you close the application using the operating system close button.

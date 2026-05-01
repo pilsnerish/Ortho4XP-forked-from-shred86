@@ -4,6 +4,14 @@ import O4_OSM_Utils as OSM
 
 
 global_prefix = "global_"
+overpass_server_keys = sorted(OSM.overpass_servers.keys())
+overpass_server_values = (
+    ["random"] + overpass_server_keys if len(overpass_server_keys) > 1 else overpass_server_keys
+)
+overpass_server_default = (
+    "random" if len(overpass_server_keys) != 1
+    else overpass_server_keys[0]
+)
 
 cfg_app_vars = {
     # App
@@ -24,9 +32,9 @@ cfg_app_vars = {
     "overpass_server_choice": {
         "module": "OSM",
         "type": str,
-        "default": "random",
-        "values": ["random"] + sorted(OSM.overpass_servers.keys()),
-        "hint": "The (country) of the Overpass OSM server used to grab vector data. It can be modified on the fly (as all _Application_ variables) in case of problem with a particular server.",
+        "default": overpass_server_default,
+        "values": overpass_server_values,
+        "hint": "OSM Overpass server used to grab vector data. Servers are specified in overpass_servers.txt.",
     },
     "skip_downloads": {
         "module": "TILE",

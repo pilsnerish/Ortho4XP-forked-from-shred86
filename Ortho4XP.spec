@@ -67,6 +67,7 @@ a = Analysis(
         ('./Previews',            './Ortho4XP_Data/Previews'),
         ('./Providers',           './Ortho4XP_Data/Providers'),
         ('community_server.txt',  './Ortho4XP_Data/'),
+        ('overpass_servers.txt',  './Ortho4XP_Data/'),
         # Explicitly bundle the system proj.db (version 5+) so the bundled
         # app doesn't fall back to pyproj's outdated version 4 copy.
         (os.path.join(system_proj_dir, "proj.db"), proj_dest),
